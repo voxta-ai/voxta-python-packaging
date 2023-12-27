@@ -1,0 +1,41 @@
+name: Build and Publish Wheel for TTS
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        python-version: [3.11.7]
+
+    steps:
+    - name: Check out code
+      uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Install Visual C++ Build Tools
+      run: |
+        choco install visualcpp-build-tools -y
+
+    - name: Install TTS
+      run: |
+        pip install setuptools wheel
+        pip install tts
+
+    - name: Build wheel from installed packages
+      run: |
+        pip wheel --no-deps --wheel-dir ./wheels tts
+
+    - name: Publish wheel
+      uses: actions/upload-artifact@v3
+      with:
+        name: tts-wheel
+        path: ./wheels/*.whl
