@@ -1,0 +1,169 @@
+From 28bae8acda6e97146390fbb7958b535fbbb55d88 Mon Sep 17 00:00:00 2001
+From: Acid Bubbles <acidbubbles.anon@gmail.com>
+Date: Fri, 29 Dec 2023 19:15:10 -0500
+Subject: [PATCH] Voxta Patch
+
+---
+ VOXTA_PATCH.md                                |  3 +++
+ build_win.bat                                 |  2 ++
+ csrc/quantization/pt_binding.cpp              | 11 ++++++++
+ .../transformer/inference/csrc/pt_binding.cpp | 14 ++++++++++
+ deepspeed/accelerator                         |  2 +-
+ deepspeed/env_report.py                       | 27 +++++++++----------
+ 6 files changed, 44 insertions(+), 15 deletions(-)
+ create mode 100644 VOXTA_PATCH.md
+
+diff --git a/VOXTA_PATCH.md b/VOXTA_PATCH.md
+new file mode 100644
+index 00000000..eb919a7b
+--- /dev/null
++++ b/VOXTA_PATCH.md
+@@ -0,0 +1,3 @@
++# Voxta Patch for DeepSpeed
++
++Source: <https://github.com/oobabooga/text-generation-webui/issues/4734>
+diff --git a/build_win.bat b/build_win.bat
+index ec8c8a36..4ebc80e1 100644
+--- a/build_win.bat
++++ b/build_win.bat
+@@ -2,6 +2,8 @@
+ 
+ set DS_BUILD_AIO=0
+ set DS_BUILD_SPARSE_ATTN=0
++set DS_BUILD_EVOFORMER_ATTN=0
++set DS_SKIP_CUDA_CHECK=1
+ 
+ echo Administrative permissions required. Detecting permissions...
+ 
+diff --git a/csrc/quantization/pt_binding.cpp b/csrc/quantization/pt_binding.cpp
+index d4c253ee..eb20f12c 100644
+--- a/csrc/quantization/pt_binding.cpp
++++ b/csrc/quantization/pt_binding.cpp
+@@ -221,6 +221,7 @@ std::vector<at::Tensor> quantized_reduction(at::Tensor& input_vals,
+                               .device(at::kCUDA)
+                               .requires_grad(false);
+ 
++    /* BEFORE */ /*
+     std::vector<long int> sz(input_vals.sizes().begin(), input_vals.sizes().end());
+     sz[sz.size() - 1] = sz.back() / devices_per_node;  // num of GPU per nodes
+     const int elems_per_in_tensor = at::numel(input_vals) / devices_per_node;
+@@ -228,6 +229,16 @@ std::vector<at::Tensor> quantized_reduction(at::Tensor& input_vals,
+ 
+     const int elems_per_in_group = elems_per_in_tensor / (in_groups / devices_per_node);
+     const int elems_per_out_group = elems_per_in_tensor / out_groups;
++    */ /* AFTER */
++    std::vector<int64_t> sz_vector(input_vals.sizes().begin(), input_vals.sizes().end());
++    sz_vector[sz_vector.size() - 1] = sz_vector.back() / devices_per_node;  // num of GPU per nodes
++    at::IntArrayRef sz(sz_vector);
++    auto output = torch::empty(sz, output_options);
++
++    const int elems_per_in_tensor = at::numel(input_vals) / devices_per_node;
++    const int elems_per_in_group = elems_per_in_tensor / (in_groups / devices_per_node);
++    const int elems_per_out_group = elems_per_in_tensor / out_groups;
++    /* END */
+ 
+     launch_dequant_reduce((int8_t*)output.data_ptr(),
+                           (float*)scales.data_ptr(),
+diff --git a/csrc/transformer/inference/csrc/pt_binding.cpp b/csrc/transformer/inference/csrc/pt_binding.cpp
+index 634b6e3a..e75f06cc 100644
+--- a/csrc/transformer/inference/csrc/pt_binding.cpp
++++ b/csrc/transformer/inference/csrc/pt_binding.cpp
+@@ -535,8 +535,13 @@ std::vector<at::Tensor> ds_softmax_context(at::Tensor& query_key_value,
+     if (layer_id == num_layers - 1) InferenceContext::Instance().advance_tokens();
+     auto prev_key = torch::from_blob(workspace + offset,
+                                      {bsz, heads, all_tokens, k},
++                                     /* BEFORE */ /*
+                                      {hidden_dim * InferenceContext::Instance().GetMaxTokenLength(),
+                                       k * InferenceContext::Instance().GetMaxTokenLength(),
++                                     */ /* AFTER */
++                                     {static_cast<unsigned>(hidden_dim * InferenceContext::Instance().GetMaxTokenLength()),
++									  static_cast<unsigned>(k * InferenceContext::Instance().GetMaxTokenLength()),
++                                     /* END */
+                                       k,
+                                       1},
+                                      options);
+@@ -544,8 +549,13 @@ std::vector<at::Tensor> ds_softmax_context(at::Tensor& query_key_value,
+     auto prev_value =
+         torch::from_blob(workspace + offset + value_offset,
+                          {bsz, heads, all_tokens, k},
++                         /* BEFORE */ /*
+                          {hidden_dim * InferenceContext::Instance().GetMaxTokenLength(),
+                           k * InferenceContext::Instance().GetMaxTokenLength(),
++                         */ /* AFTER */
++                         {static_cast<unsigned>(hidden_dim * InferenceContext::Instance().GetMaxTokenLength()),
++						  static_cast<unsigned>(k * InferenceContext::Instance().GetMaxTokenLength()),
++                          /* END */
+                           k,
+                           1},
+                          options);
+@@ -1572,7 +1582,11 @@ std::vector<at::Tensor> ds_rms_mlp_gemm(at::Tensor& input,
+     auto output = at::from_blob(output_ptr, input.sizes(), options);
+     auto inp_norm = at::from_blob(inp_norm_ptr, input.sizes(), options);
+     auto intermediate_gemm =
++        /* BEFORE */ /*
+         at::from_blob(intermediate_ptr, {input.size(0), input.size(1), mlp_1_out_neurons}, options);
++        */ /* AFTER */
++        at::from_blob(intermediate_ptr, {input.size(0), input.size(1), static_cast<int64_t>(mlp_1_out_neurons)}, options);
++        /* END */
+ 
+     auto act_func_type = static_cast<ActivationFuncType>(activation_type);
+ 
+diff --git a/deepspeed/accelerator b/deepspeed/accelerator
+index b61fffac..14bf5923 120000
+--- a/deepspeed/accelerator
++++ b/deepspeed/accelerator
+@@ -1 +1 @@
+-../accelerator/
+\ No newline at end of file
++../accelerator
+\ No newline at end of file
+diff --git a/deepspeed/env_report.py b/deepspeed/env_report.py
+index 2c3a9e70..bde792fe 100644
+--- a/deepspeed/env_report.py
++++ b/deepspeed/env_report.py
+@@ -8,6 +8,8 @@ import torch
+ import deepspeed
+ import subprocess
+ import argparse
++# AFTER
++import psutil
+ from .ops.op_builder.all_ops import ALL_OPS
+ from .git_version_info import installed_ops, torch_info
+ from deepspeed.accelerator import get_accelerator
+@@ -82,22 +84,19 @@ def nvcc_version():
+ 
+ def get_shm_size():
+     try:
+-        shm_stats = os.statvfs('/dev/shm')
+-    except (OSError, FileNotFoundError, ValueError):
+-        return "UNKNOWN", None
+-
+-    shm_size = shm_stats.f_frsize * shm_stats.f_blocks
+-    shm_hbytes = human_readable_size(shm_size)
+-    warn = []
+-    if shm_size < 512 * 1024**2:
+-        warn.append(
+-            f" {YELLOW} [WARNING] /dev/shm size might be too small, if running in docker increase to at least --shm-size='1gb' {END}"
+-        )
+-        if get_accelerator().communication_backend_name() == "nccl":
++        temp_dir = os.getenv('TEMP') or os.getenv('TMP') or os.path.join(os.path.expanduser('~'), 'tmp')
++        shm_stats = psutil.disk_usage(temp_dir)
++        shm_size = shm_stats.total
++        shm_hbytes = human_readable_size(shm_size)
++        warn = []
++        if shm_size < 512 * 1024**2:
+             warn.append(
+-                f" {YELLOW} [WARNING] see more details about NCCL requirements: https://docs.nvidia.com/deeplearning/nccl/user-guide/docs/troubleshooting.html#sharing-data {END}"
++                f" {YELLOW} [WARNING] Shared memory size might be too small, consider increasing it. {END}"
+             )
+-    return shm_hbytes, warn
++            # Add additional warnings specific to your use case if needed.
++        return shm_hbytes, warn
++    except Exception as e:
++        return "UNKNOWN", [f"Error getting shared memory size: {e}"]
+ 
+ 
+ def human_readable_size(size):
+-- 
+2.43.0.windows.1
+

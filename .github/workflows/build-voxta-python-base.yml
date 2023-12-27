@@ -1,0 +1,57 @@
+name: Python Folder Packaging
+
+on:
+  push:
+    tags:
+      - 'python-*'
+
+jobs:
+  package-and-release:
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        python-version: [3.11.7]
+
+    steps:
+    - name: Check out code
+      uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Run Cleanup Script
+      run: ./patches/python/prepare.ps1 $env:pythonLocation
+
+    - name: Zip Python Folder
+      run: 7z a python-${{ matrix.python-version }}-amd64-voxtapack.zip $env:pythonLocation/*
+
+    - name: Compute SHA-1 Hash
+      id: sha1
+      run: |
+        $sha1 = (Get-FileHash python-${{ matrix.python-version }}-amd64-voxtapack.zip -Algorithm SHA1).Hash
+        echo "SHA1=$sha1" >> $GITHUB_ENV
+        echo "::set-output name=sha1::$sha1"
+
+    - name: Create Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.ref }}
+        release_name: Release ${{ github.ref }}
+        body: 'SHA-1 Hash: ${{ steps.sha1.outputs.sha1 }}'
+        draft: false
+        prerelease: false
+
+    - name: Upload ZIP to Release
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./python-${{ matrix.python-version }}-amd64-voxtapack.zip
+        asset_name: python-${{ matrix.python-version }}-amd64-voxtapack-${{ github.run_number }}.zip
+        asset_content_type: application/zip
