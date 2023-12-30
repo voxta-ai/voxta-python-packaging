@@ -26,21 +26,30 @@ jobs:
         choco install visualcpp-build-tools -y
 
     - name: Clone DeepSpeed repository
-      run: git clone --depth 1 --branch 0.11.1 https://github.com/microsoft/DeepSpeed.git
+      run: git clone --depth 1 --branch v0.11.1 https://github.com/microsoft/DeepSpeed.git
+
+    - name: Modify DeepSpeed setup files
+      run: |
+        cd deepspeed
+        git apply --whitespace=fix ../patches/deepspeed/deepspeed-win.patch
+
+    - uses: Jimver/cuda-toolkit@v0.2.11
+      id: cuda-toolkit
+      with:
+        cuda: '12.1.0'
 
     - name: Install dependencies
       run: |
         pip install torch --index-url https://download.pytorch.org/whl/cu121
 
-    - name: Modify DeepSpeed setup files
+    - name: Install Setup Tools
       run: |
-        cd deepspeed
-        git apply ../patches/deepspeed/deepspeed-win.patch
+        pip install setuptools wheel
 
     - name: Build DeepSpeed
       run: |
-        cd DeepSpeed
-        python setup.py bdist_wheel
+        cd deepspeed
+        ./build_win.bat
 
     - name: Create Release
       id: create_release

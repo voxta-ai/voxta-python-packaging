@@ -25,14 +25,17 @@ jobs:
       run: |
         choco install visualcpp-build-tools -y
 
-    - name: Install TTS
+    - name: Install Setup Tools
       run: |
         pip install setuptools wheel
+
+    - name: Install TTS
+      run: |
         pip install tts==0.22.0
 
     - name: Build wheel from installed packages
       run: |
-        pip wheel --no-deps --wheel-dir ./wheels tts
+        pip wheel --wheel-dir ./wheels tts
 
     - name: Create Release
       id: create_release

@@ -1,4 +1,4 @@
-From 28bae8acda6e97146390fbb7958b535fbbb55d88 Mon Sep 17 00:00:00 2001
+From e5a79efb870046b7f9359fdd0ab0e69142ca0cf2 Mon Sep 17 00:00:00 2001
 From: Acid Bubbles <acidbubbles.anon@gmail.com>
 Date: Fri, 29 Dec 2023 19:15:10 -0500
 Subject: [PATCH] Voxta Patch
@@ -65,7 +65,7 @@ index d4c253ee..eb20f12c 100644
      launch_dequant_reduce((int8_t*)output.data_ptr(),
                            (float*)scales.data_ptr(),
 diff --git a/csrc/transformer/inference/csrc/pt_binding.cpp b/csrc/transformer/inference/csrc/pt_binding.cpp
-index 634b6e3a..e75f06cc 100644
+index 634b6e3a..bbad0a69 100644
 --- a/csrc/transformer/inference/csrc/pt_binding.cpp
 +++ b/csrc/transformer/inference/csrc/pt_binding.cpp
 @@ -535,8 +535,13 @@ std::vector<at::Tensor> ds_softmax_context(at::Tensor& query_key_value,
@@ -77,7 +77,7 @@ index 634b6e3a..e75f06cc 100644
                                        k * InferenceContext::Instance().GetMaxTokenLength(),
 +                                     */ /* AFTER */
 +                                     {static_cast<unsigned>(hidden_dim * InferenceContext::Instance().GetMaxTokenLength()),
-+									  static_cast<unsigned>(k * InferenceContext::Instance().GetMaxTokenLength()),
++                                      static_cast<unsigned>(k * InferenceContext::Instance().GetMaxTokenLength()),
 +                                     /* END */
                                        k,
                                        1},
@@ -91,7 +91,7 @@ index 634b6e3a..e75f06cc 100644
                            k * InferenceContext::Instance().GetMaxTokenLength(),
 +                         */ /* AFTER */
 +                         {static_cast<unsigned>(hidden_dim * InferenceContext::Instance().GetMaxTokenLength()),
-+						  static_cast<unsigned>(k * InferenceContext::Instance().GetMaxTokenLength()),
++                          static_cast<unsigned>(k * InferenceContext::Instance().GetMaxTokenLength()),
 +                          /* END */
                            k,
                            1},
