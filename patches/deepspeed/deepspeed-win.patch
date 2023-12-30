@@ -1,16 +1,16 @@
-From b6d3f5f12ba2c428d3335442d5c8e5d9d9d1fc8a Mon Sep 17 00:00:00 2001
+From 1561d9d17c390bc2ac10123cab4c612e615def9d Mon Sep 17 00:00:00 2001
 From: Acid Bubbles <acidbubbles.anon@gmail.com>
 Date: Fri, 29 Dec 2023 19:15:10 -0500
 Subject: [PATCH] Voxta Patch
 
 ---
  VOXTA_PATCH.md                                |  3 +++
- build_win.bat                                 |  2 ++
+ build_win.bat                                 |  4 +++
  csrc/quantization/pt_binding.cpp              |  7 ++---
  .../transformer/inference/csrc/pt_binding.cpp | 10 +++----
  deepspeed/accelerator                         |  2 +-
  deepspeed/env_report.py                       | 27 +++++++++----------
- 6 files changed, 28 insertions(+), 23 deletions(-)
+ 6 files changed, 30 insertions(+), 23 deletions(-)
  create mode 100644 VOXTA_PATCH.md
 
 diff --git a/VOXTA_PATCH.md b/VOXTA_PATCH.md
@@ -23,15 +23,17 @@ index 00000000..eb919a7b
 +
 +Source: <https://github.com/oobabooga/text-generation-webui/issues/4734>
 diff --git a/build_win.bat b/build_win.bat
-index ec8c8a36..4ebc80e1 100644
+index ec8c8a36..c4e9269e 100644
 --- a/build_win.bat
 +++ b/build_win.bat
-@@ -2,6 +2,8 @@
+@@ -2,6 +2,10 @@
  
  set DS_BUILD_AIO=0
  set DS_BUILD_SPARSE_ATTN=0
 +set DS_BUILD_EVOFORMER_ATTN=0
 +set DS_SKIP_CUDA_CHECK=1
++set DS_BUILD_CUTLASS_OPS=0
++set DS_BUILD_RAGGED_DEVICE_OPS=0
  
  echo Administrative permissions required. Detecting permissions...
  
@@ -100,7 +102,7 @@ index b61fffac..14bf5923 120000
 +../accelerator
 \ No newline at end of file
 diff --git a/deepspeed/env_report.py b/deepspeed/env_report.py
-index 2c3a9e70..bde792fe 100644
+index 91226245..1e125bb5 100644
 --- a/deepspeed/env_report.py
 +++ b/deepspeed/env_report.py
 @@ -8,6 +8,8 @@ import torch
@@ -112,7 +114,7 @@ index 2c3a9e70..bde792fe 100644
  from .ops.op_builder.all_ops import ALL_OPS
  from .git_version_info import installed_ops, torch_info
  from deepspeed.accelerator import get_accelerator
-@@ -82,22 +84,19 @@ def nvcc_version():
+@@ -108,22 +110,19 @@ def installed_cann_version():
  
  def get_shm_size():
      try:
