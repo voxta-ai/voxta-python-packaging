@@ -21,10 +21,6 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
 
-    - name: Install Visual C++ Build Tools
-      run: |
-        choco install visualcpp-build-tools -y
-
     - name: Clone DeepSpeed repository
       run: git clone --depth 1 --branch v0.11.1 https://github.com/microsoft/DeepSpeed.git
 
@@ -32,6 +28,10 @@ jobs:
       run: |
         cd deepspeed
         git apply --whitespace=fix ../patches/deepspeed/deepspeed-win.patch
+
+    - name: Install Visual C++ Build Tools
+      run: |
+        choco install visualcpp-build-tools -y
 
     - uses: Jimver/cuda-toolkit@v0.2.11
       id: cuda-toolkit
@@ -42,32 +42,18 @@ jobs:
       run: |
         pip install torch --index-url https://download.pytorch.org/whl/cu121
 
-    - name: Install Setup Tools
+    - name: Install Setup Tools and Dependencies
       run: |
-        pip install setuptools wheel
+        pip install setuptools wheel numpy
 
     - name: Build DeepSpeed
       run: |
         cd deepspeed
         ./build_win.bat
 
-    - name: Create Release
-      id: create_release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - name: Release
+      uses: softprops/action-gh-release@v1
+      if: startsWith(github.ref, 'refs/tags/')
       with:
-        tag_name: ${{ github.ref }}
-        release_name: Release ${{ github.ref }}
-        draft: false
-        prerelease: false
-
-    - name: Upload Wheel to Release
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: deepspeed/dist/deepspeed-0.11.1+9911c574-cp311-cp311-win_amd64.whl
-        asset_name: deepspeed-0.11.1+9911c574-cp311-cp311-win_amd64.whl
-        asset_content_type: application/octet-stream
+        draft: true
+        files: deepspeed/dist/*.whl
