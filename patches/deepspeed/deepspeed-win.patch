@@ -1,4 +1,4 @@
-From e5a79efb870046b7f9359fdd0ab0e69142ca0cf2 Mon Sep 17 00:00:00 2001
+From b6d3f5f12ba2c428d3335442d5c8e5d9d9d1fc8a Mon Sep 17 00:00:00 2001
 From: Acid Bubbles <acidbubbles.anon@gmail.com>
 Date: Fri, 29 Dec 2023 19:15:10 -0500
 Subject: [PATCH] Voxta Patch
@@ -6,11 +6,11 @@ Subject: [PATCH] Voxta Patch
 ---
  VOXTA_PATCH.md                                |  3 +++
  build_win.bat                                 |  2 ++
- csrc/quantization/pt_binding.cpp              | 11 ++++++++
- .../transformer/inference/csrc/pt_binding.cpp | 14 ++++++++++
+ csrc/quantization/pt_binding.cpp              |  7 ++---
+ .../transformer/inference/csrc/pt_binding.cpp | 10 +++----
  deepspeed/accelerator                         |  2 +-
  deepspeed/env_report.py                       | 27 +++++++++----------
- 6 files changed, 44 insertions(+), 15 deletions(-)
+ 6 files changed, 28 insertions(+), 23 deletions(-)
  create mode 100644 VOXTA_PATCH.md
 
 diff --git a/VOXTA_PATCH.md b/VOXTA_PATCH.md
@@ -36,75 +36,57 @@ index ec8c8a36..4ebc80e1 100644
  echo Administrative permissions required. Detecting permissions...
  
 diff --git a/csrc/quantization/pt_binding.cpp b/csrc/quantization/pt_binding.cpp
-index d4c253ee..eb20f12c 100644
+index a4210897..12777603 100644
 --- a/csrc/quantization/pt_binding.cpp
 +++ b/csrc/quantization/pt_binding.cpp
-@@ -221,6 +221,7 @@ std::vector<at::Tensor> quantized_reduction(at::Tensor& input_vals,
+@@ -241,11 +241,12 @@ std::vector<at::Tensor> quantized_reduction(at::Tensor& input_vals,
                                .device(at::kCUDA)
                                .requires_grad(false);
  
-+    /* BEFORE */ /*
-     std::vector<long int> sz(input_vals.sizes().begin(), input_vals.sizes().end());
-     sz[sz.size() - 1] = sz.back() / devices_per_node;  // num of GPU per nodes
-     const int elems_per_in_tensor = at::numel(input_vals) / devices_per_node;
-@@ -228,6 +229,16 @@ std::vector<at::Tensor> quantized_reduction(at::Tensor& input_vals,
- 
-     const int elems_per_in_group = elems_per_in_tensor / (in_groups / devices_per_node);
-     const int elems_per_out_group = elems_per_in_tensor / out_groups;
-+    */ /* AFTER */
+-    std::vector<long int> sz(input_vals.sizes().begin(), input_vals.sizes().end());
+-    sz[sz.size() - 1] = sz.back() / devices_per_node;  // num of GPU per nodes
+-    const int elems_per_in_tensor = at::numel(input_vals) / devices_per_node;
 +    std::vector<int64_t> sz_vector(input_vals.sizes().begin(), input_vals.sizes().end());
 +    sz_vector[sz_vector.size() - 1] = sz_vector.back() / devices_per_node;  // num of GPU per nodes
 +    at::IntArrayRef sz(sz_vector);
-+    auto output = torch::empty(sz, output_options);
-+
-+    const int elems_per_in_tensor = at::numel(input_vals) / devices_per_node;
-+    const int elems_per_in_group = elems_per_in_tensor / (in_groups / devices_per_node);
-+    const int elems_per_out_group = elems_per_in_tensor / out_groups;
-+    /* END */
+     auto output = torch::empty(sz, output_options);
  
-     launch_dequant_reduce((int8_t*)output.data_ptr(),
-                           (float*)scales.data_ptr(),
++    const int elems_per_in_tensor = at::numel(input_vals) / devices_per_node;
+     const int elems_per_in_group = elems_per_in_tensor / (in_groups / devices_per_node);
+     const int elems_per_out_group = elems_per_in_tensor / out_groups;
+ 
 diff --git a/csrc/transformer/inference/csrc/pt_binding.cpp b/csrc/transformer/inference/csrc/pt_binding.cpp
-index 634b6e3a..bbad0a69 100644
+index b7277d1e..a26eaa40 100644
 --- a/csrc/transformer/inference/csrc/pt_binding.cpp
 +++ b/csrc/transformer/inference/csrc/pt_binding.cpp
-@@ -535,8 +535,13 @@ std::vector<at::Tensor> ds_softmax_context(at::Tensor& query_key_value,
+@@ -538,8 +538,8 @@ std::vector<at::Tensor> ds_softmax_context(at::Tensor& query_key_value,
      if (layer_id == num_layers - 1) InferenceContext::Instance().advance_tokens();
      auto prev_key = torch::from_blob(workspace + offset,
                                       {bsz, heads, all_tokens, k},
-+                                     /* BEFORE */ /*
-                                      {hidden_dim * InferenceContext::Instance().GetMaxTokenLength(),
-                                       k * InferenceContext::Instance().GetMaxTokenLength(),
-+                                     */ /* AFTER */
+-                                     {hidden_dim * InferenceContext::Instance().GetMaxTokenLength(),
+-                                      k * InferenceContext::Instance().GetMaxTokenLength(),
 +                                     {static_cast<unsigned>(hidden_dim * InferenceContext::Instance().GetMaxTokenLength()),
 +                                      static_cast<unsigned>(k * InferenceContext::Instance().GetMaxTokenLength()),
-+                                     /* END */
                                        k,
                                        1},
                                       options);
-@@ -544,8 +549,13 @@ std::vector<at::Tensor> ds_softmax_context(at::Tensor& query_key_value,
+@@ -547,8 +547,8 @@ std::vector<at::Tensor> ds_softmax_context(at::Tensor& query_key_value,
      auto prev_value =
          torch::from_blob(workspace + offset + value_offset,
                           {bsz, heads, all_tokens, k},
-+                         /* BEFORE */ /*
-                          {hidden_dim * InferenceContext::Instance().GetMaxTokenLength(),
-                           k * InferenceContext::Instance().GetMaxTokenLength(),
-+                         */ /* AFTER */
+-                         {hidden_dim * InferenceContext::Instance().GetMaxTokenLength(),
+-                          k * InferenceContext::Instance().GetMaxTokenLength(),
 +                         {static_cast<unsigned>(hidden_dim * InferenceContext::Instance().GetMaxTokenLength()),
 +                          static_cast<unsigned>(k * InferenceContext::Instance().GetMaxTokenLength()),
-+                          /* END */
                            k,
                            1},
                           options);
-@@ -1572,7 +1582,11 @@ std::vector<at::Tensor> ds_rms_mlp_gemm(at::Tensor& input,
+@@ -1578,7 +1578,7 @@ std::vector<at::Tensor> ds_rms_mlp_gemm(at::Tensor& input,
      auto output = at::from_blob(output_ptr, input.sizes(), options);
      auto inp_norm = at::from_blob(inp_norm_ptr, input.sizes(), options);
      auto intermediate_gemm =
-+        /* BEFORE */ /*
-         at::from_blob(intermediate_ptr, {input.size(0), input.size(1), mlp_1_out_neurons}, options);
-+        */ /* AFTER */
+-        at::from_blob(intermediate_ptr, {input.size(0), input.size(1), mlp_1_out_neurons}, options);
 +        at::from_blob(intermediate_ptr, {input.size(0), input.size(1), static_cast<int64_t>(mlp_1_out_neurons)}, options);
-+        /* END */
  
      auto act_func_type = static_cast<ActivationFuncType>(activation_type);
  

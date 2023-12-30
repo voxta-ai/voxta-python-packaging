@@ -35,7 +35,7 @@ jobs:
 
     - name: Build wheel from installed packages
       run: |
-        pip wheel --wheel-dir ./wheels tts
+        pip wheel --no-deps --wheel-dir ./wheels tts
 
     - name: Release
       uses: softprops/action-gh-release@v1

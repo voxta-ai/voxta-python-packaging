@@ -22,7 +22,7 @@ jobs:
         python-version: ${{ matrix.python-version }}
 
     - name: Clone DeepSpeed repository
-      run: git clone --depth 1 --branch v0.11.1 https://github.com/microsoft/DeepSpeed.git
+      run: git clone --depth 1 --branch v0.11.2 https://github.com/microsoft/DeepSpeed.git
 
     - name: Modify DeepSpeed setup files
       run: |
