@@ -40,7 +40,7 @@ jobs:
 
     - name: Install dependencies
       run: |
-        pip install torch --index-url https://download.pytorch.org/whl/cu118
+        pip install torch==2.2.0 --index-url https://download.pytorch.org/whl/cu118
 
     - name: Install Setup Tools and Dependencies
       run: |
