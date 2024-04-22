@@ -1,9 +1,9 @@
-name: Build and Publish Wheel for TTS
+name: Build and Publish Wheel for MeloTTS
 
 on:
   push:
     tags:
-      - 'tts-*'
+      - 'melotts-*'
 
 jobs:
   build-and-release:
@@ -21,6 +21,9 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
 
+    - name: Clone MeloTTS repository
+      run: git clone --depth 1 https://github.com/myshell-ai/MeloTTS.git
+
     - name: Install Visual C++ Build Tools
       run: |
         choco install visualcpp-build-tools -y
@@ -29,13 +32,14 @@ jobs:
       run: |
         pip install setuptools wheel
 
-    - name: Install TTS
+    - name: Install dependencies
       run: |
-        pip install tts==0.22.0
+        pip install torch==2.2.1 --index-url https://download.pytorch.org/whl/cu121
+        pip install -r requirements.txt
 
     - name: Build wheel from installed packages
       run: |
-        pip wheel --no-deps --wheel-dir ./wheels tts
+        python setup.py bdist_wheel
 
     - name: Release
       uses: softprops/action-gh-release@v1

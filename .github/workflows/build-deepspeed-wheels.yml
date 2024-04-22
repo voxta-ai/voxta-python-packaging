@@ -10,7 +10,7 @@ jobs:
     runs-on: windows-latest
     strategy:
       matrix:
-        python-version: [3.11.8]
+        python-version: [3.12.3]
 
     steps:
     - name: Check out code
@@ -41,6 +41,9 @@ jobs:
     - name: Install dependencies
       run: |
         pip install torch==2.2.1 --index-url https://download.pytorch.org/whl/cu121
+        pip install -e .
+        python -m unidic download
+        python melo/init_downloads.py
 
     - name: Install Setup Tools and Dependencies
       run: |
