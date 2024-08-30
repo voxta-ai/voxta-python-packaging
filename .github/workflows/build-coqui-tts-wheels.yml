@@ -1,9 +1,9 @@
-name: Build and Publish Wheel for TTS
+name: Build and Publish Wheel for coqui-tts
 
 on:
   push:
     tags:
-      - 'tts-*'
+      - 'coqui-tts-*'
 
 jobs:
   build-and-release:
@@ -29,13 +29,13 @@ jobs:
       run: |
         pip install setuptools wheel
 
-    - name: Install TTS
+    - name: Install coqui-tts
       run: |
-        pip install tts==0.22.0
+        pip install coqui-tts==0.24.1
 
     - name: Build wheel from installed packages
       run: |
-        pip wheel --no-deps --wheel-dir ./wheels tts
+        pip wheel --no-deps --wheel-dir ./wheels coqui-tts
 
     - name: Release
       uses: softprops/action-gh-release@v1
