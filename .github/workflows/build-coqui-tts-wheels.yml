@@ -21,25 +21,27 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
 
-    - name: Install Visual C++ Build Tools
+    - name: Clone coqui-ai-tts repository
       run: |
-        choco install visualcpp-build-tools -y
+        $commit = "233dfb54aef870985c737e52ab6599370eb943a4";
+        git clone --depth 1 https://github.com/idiap/coqui-ai-TTS.git
+        cd coqui-ai-TTS
+        git fetch --depth 1 origin $commit
+        git checkout $commit
 
     - name: Install Setup Tools
+      working-directory: coqui-ai-TTS
       run: |
-        pip install setuptools wheel
+        pip install -U pip setuptools wheel build numpy cython
 
-    - name: Install coqui-tts
+    - name: Build
+      working-directory: coqui-ai-TTS
       run: |
-        pip install coqui-tts==0.24.1
-
-    - name: Build wheel from installed packages
-      run: |
-        pip wheel --no-deps --wheel-dir ./wheels coqui-tts
+        python -m build
 
     - name: Release
       uses: softprops/action-gh-release@v1
       if: startsWith(github.ref, 'refs/tags/')
       with:
         draft: true
-        files: wheels/*.whl
+        files: coqui-ai-TTS/dist/*.whl
