@@ -23,7 +23,7 @@ jobs:
 
     - name: Clone coqui-ai-tts repository
       run: |
-        $commit = "233dfb54aef870985c737e52ab6599370eb943a4";
+        $commit = "e5dd06b3bb15bc777e55fd5f2d1a4a8428fc025a";
         git clone --depth 1 https://github.com/idiap/coqui-ai-TTS.git
         cd coqui-ai-TTS
         git fetch --depth 1 origin $commit
