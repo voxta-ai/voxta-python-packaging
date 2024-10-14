@@ -21,12 +21,16 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
 
+    - name: Install Visual Studio 2019 Build Tools
+      uses: ilammy/msvc-dev-cmd@v1
+      with:
+        arch: x64
+        toolset: '14.29'
+        uwp: false
+
     - name: Clone DeepSpeed repository
       run: git clone --depth 1 --branch v0.15.2 https://github.com/microsoft/DeepSpeed.git
-
-    - name: Install Visual C++ Build Tools
-      run: |
-        choco install visualcpp-build-tools -y
+      shell: cmd
 
     - uses: Jimver/cuda-toolkit@v0.2.11
       id: cuda-toolkit
@@ -34,17 +38,30 @@ jobs:
         cuda: '12.1.0'
 
     - name: Install dependencies
-      run: |
-        pip install torch==2.4.1 --index-url https://download.pytorch.org/whl/cu121
+      run: pip install --upgrade torch==2.4.1 --index-url https://download.pytorch.org/whl/cu121
+      shell: cmd
 
     - name: Install Setup Tools and Dependencies
-      run: |
-        pip install setuptools wheel numpy
+      run: pip install setuptools wheel numpy
+      shell: cmd
 
     - name: Build DeepSpeed
       run: |
         cd deepspeed
-        ./build_win.bat
+        set CUDA_HOME=%CUDA_PATH%
+        set DISTUTILS_USE_SDK=1
+
+        set DS_BUILD_AIO=0
+        set DS_BUILD_CUTLASS_OPS=0
+        set DS_BUILD_EVOFORMER_ATTN=0
+        set DS_BUILD_FP_QUANTIZER=0
+        set DS_BUILD_RAGGED_DEVICE_OPS=0
+        set DS_BUILD_SPARSE_ATTN=0
+        set DS_BUILD_CCL_COMM=0
+        set DS_BUILD_SHM_COMM=0
+
+        python setup.py bdist_wheel
+      shell: cmd
 
     - name: Release
       uses: softprops/action-gh-release@v1
