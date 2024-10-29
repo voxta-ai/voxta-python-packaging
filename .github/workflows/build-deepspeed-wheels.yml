@@ -28,44 +28,73 @@ jobs:
         toolset: '14.29'
         uwp: false
 
+    - name: Install Dependencies
+      run: |
+        choco install ninja -y
+        choco install windows-sdk-10.1 -y
+        choco install visualstudio-installer -y
+        & "C:\Program Files (x86)\Microsoft Visual Studio\Installer\vs_installer.exe" modify --add Microsoft.VisualStudio.Component.VC.ATL --add Microsoft.VisualStudio.Component.VC.Tools.x86.x64 --add Microsoft.VisualStudio.Component.Windows10SDK.19041 --quiet --wait
+      shell: powershell
+
     - name: Clone DeepSpeed repository
       run: git clone --depth 1 --branch v0.15.2 https://github.com/microsoft/DeepSpeed.git
       shell: cmd
 
-    - uses: Jimver/cuda-toolkit@v0.2.11
+    - uses: Jimver/cuda-toolkit@v0.2.18
       id: cuda-toolkit
       with:
-        cuda: '12.1.0'
+        cuda: '12.4.1'
+
+    - name: Verify Environment Variables
+      run: |
+        if "%CUDA_PATH%"=="" (
+          echo CUDA_PATH is not set. Failing the build.
+          exit /b 1
+        )
+        if "%VCToolsInstallDir%"=="" (
+          echo VCToolsInstallDir is not set. Failing the build.
+          exit /b 1
+        )
+        if not exist "%CUDA_PATH%" (
+          echo CUDA_PATH does not exist: %CUDA_PATH%. Failing the build.
+          exit /b 1
+        )
+        if not exist "%VCToolsInstallDir%" (
+          echo VCToolsInstallDir does not exist: %VCToolsInstallDir%. Failing the build.
+          exit /b 1
+        )
+      shell: cmd
 
     - name: Install dependencies
       run: pip install --upgrade torch==2.4.1 --index-url https://download.pytorch.org/whl/cu121
       shell: cmd
+      working-directory: DeepSpeed
 
     - name: Install Setup Tools and Dependencies
-      run: pip install setuptools wheel numpy
+      run: pip install setuptools wheel numpy psutil
       shell: cmd
+      working-directory: DeepSpeed
 
     - name: Build DeepSpeed
       run: |
-        cd deepspeed
-        set CUDA_HOME=%CUDA_PATH%
-        set DISTUTILS_USE_SDK=1
-
-        set DS_BUILD_AIO=0
-        set DS_BUILD_CUTLASS_OPS=0
-        set DS_BUILD_EVOFORMER_ATTN=0
-        set DS_BUILD_FP_QUANTIZER=0
-        set DS_BUILD_RAGGED_DEVICE_OPS=0
-        set DS_BUILD_SPARSE_ATTN=0
-        set DS_BUILD_CCL_COMM=0
-        set DS_BUILD_SHM_COMM=0
-
+        call "%VCToolsInstallDir%Auxiliary\Build\vcvars64.bat" && ^
+        set CUDA_HOME=%CUDA_PATH% && ^
+        set DISTUTILS_USE_SDK=1 && ^
+        set DS_BUILD_AIO=0 && ^
+        set DS_BUILD_CUTLASS_OPS=0 && ^
+        set DS_BUILD_EVOFORMER_ATTN=0 && ^
+        set DS_BUILD_FP_QUANTIZER=0 && ^
+        set DS_BUILD_RAGGED_DEVICE_OPS=0 && ^
+        set DS_BUILD_SPARSE_ATTN=0 && ^
+        set DS_BUILD_CCL_COMM=0 && ^
+        set DS_BUILD_SHM_COMM=0 && ^
         python setup.py bdist_wheel
       shell: cmd
+      working-directory: DeepSpeed
 
     - name: Release
       uses: softprops/action-gh-release@v1
       if: startsWith(github.ref, 'refs/tags/')
       with:
         draft: true
-        files: deepspeed/dist/*.whl
+        files: DeepSpeed/dist/*.whl
