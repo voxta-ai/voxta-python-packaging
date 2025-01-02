@@ -10,7 +10,7 @@ jobs:
     runs-on: windows-latest
     strategy:
       matrix:
-        python-version: [3.12.7]
+        python-version: [3.12.8]
 
     steps:
     - name: Check out code
