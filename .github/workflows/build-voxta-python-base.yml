@@ -10,14 +10,14 @@ jobs:
     runs-on: windows-latest
     strategy:
       matrix:
-        python-version: [3.13.2]
+        python-version: [3.13t]
 
     steps:
     - name: Check out code
       uses: actions/checkout@v3
 
     - name: Set up Python
-      uses: actions/setup-python@v4
+      uses: Quansight-Labs/setup-python@v5
       with:
         python-version: ${{ matrix.python-version }}
 
