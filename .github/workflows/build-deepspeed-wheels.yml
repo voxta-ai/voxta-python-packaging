@@ -37,36 +37,16 @@ jobs:
       shell: powershell
 
     - name: Clone DeepSpeed repository
-      run: git clone --depth 1 --branch v0.15.2 https://github.com/microsoft/DeepSpeed.git
+      run: git clone --depth 1 --branch v0.16.3 https://github.com/microsoft/DeepSpeed.git
       shell: cmd
 
-    - uses: Jimver/cuda-toolkit@v0.2.18
+    - uses: Jimver/cuda-toolkit@v0.2.21
       id: cuda-toolkit
       with:
-        cuda: '12.4.1'
-
-    - name: Verify Environment Variables
-      run: |
-        if "%CUDA_PATH%"=="" (
-          echo CUDA_PATH is not set. Failing the build.
-          exit /b 1
-        )
-        if "%VCToolsInstallDir%"=="" (
-          echo VCToolsInstallDir is not set. Failing the build.
-          exit /b 1
-        )
-        if not exist "%CUDA_PATH%" (
-          echo CUDA_PATH does not exist: %CUDA_PATH%. Failing the build.
-          exit /b 1
-        )
-        if not exist "%VCToolsInstallDir%" (
-          echo VCToolsInstallDir does not exist: %VCToolsInstallDir%. Failing the build.
-          exit /b 1
-        )
-      shell: cmd
+        cuda: '12.8.0'
 
     - name: Install dependencies
-      run: pip install --upgrade torch==2.4.1 --index-url https://download.pytorch.org/whl/cu121
+      run: pip install --upgrade torch==2.5.1 --index-url https://download.pytorch.org/whl/cu121
       shell: cmd
       working-directory: DeepSpeed
 
@@ -78,16 +58,24 @@ jobs:
     - name: Build DeepSpeed
       run: |
         call "%VCToolsInstallDir%Auxiliary\Build\vcvars64.bat" && ^
+        set DISTUTILS_USE_SDK=1 && ^
         set CUDA_HOME=%CUDA_PATH% && ^
         set DISTUTILS_USE_SDK=1 && ^
         set DS_BUILD_AIO=0 && ^
         set DS_BUILD_CUTLASS_OPS=0 && ^
         set DS_BUILD_EVOFORMER_ATTN=0 && ^
         set DS_BUILD_FP_QUANTIZER=0 && ^
+        set DS_BUILD_GDS=0
         set DS_BUILD_RAGGED_DEVICE_OPS=0 && ^
         set DS_BUILD_SPARSE_ATTN=0 && ^
         set DS_BUILD_CCL_COMM=0 && ^
         set DS_BUILD_SHM_COMM=0 && ^
+        set DS_BUILD_CPU_LION=0 && ^
+        set DS_BUILD_CPU_ADAM=0 && ^
+        set DS_BUILD_FUSED_ADAM=0 && ^
+        set DS_BUILD_FUSED_LION=0 && ^
+        set DS_BUILD_CPU_ADAGRAD=0 && ^
+        set DS_BUILD_FUSED_LAMB=0 && ^
         python setup.py bdist_wheel
       shell: cmd
       working-directory: DeepSpeed
