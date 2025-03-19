@@ -2,7 +2,7 @@
 setlocal
 echo Entering Voxta Python Virtual Environment
 set "PYTHONHOME=%~dp0"
-set "PYTHONPATH=%PYTHONHOME%Lib\site-packages\;%PYTHONHOME%Lib\;%PYTHONHOME%DLLs\;%PYTHONHOME%"
+set "PYTHONPATH=%PYTHONHOME%..\..\..\Resources\Python\Lib\site-packages;%PYTHONHOME%Lib\site-packages\;%PYTHONHOME%Lib\;%PYTHONHOME%DLLs\;%PYTHONHOME%"
 set "PATH=%PYTHONHOME%Scripts;%PATH%"
 set "LIBPATH=%PYTHONHOME%libs"
 echo PYTHONHOME = %PYTHON_HOME%
