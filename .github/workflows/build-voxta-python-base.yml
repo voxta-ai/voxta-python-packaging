@@ -3,41 +3,41 @@ name: Python Folder Packaging
 on:
   push:
     tags:
-      - 'python-*'
+      - "python-*"
 
 jobs:
   package-and-release:
     runs-on: windows-latest
     strategy:
       matrix:
-        python-version: [3.13.7]
+        python-version: [3.13.13]
 
     steps:
-    - name: Check out code
-      uses: actions/checkout@v3
+      - name: Check out code
+        uses: actions/checkout@v6
 
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: ${{ matrix.python-version }}
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python-version }}
 
-    - name: Run Cleanup Script
-      run: ./patches/python/prepare.ps1 $env:pythonLocation
+      - name: Run Cleanup Script
+        run: ./patches/python/prepare.ps1 $env:pythonLocation
 
-    - name: Zip Python Folder
-      run: 7z a python-${{ matrix.python-version }}-amd64-voxtapack.zip $env:pythonLocation/*
+      - name: Zip Python Folder
+        run: 7z a python-${{ matrix.python-version }}-amd64-voxtapack.zip $env:pythonLocation/*
 
-    - name: Compute SHA-1 Hash
-      id: sha1
-      run: |
-        $sha1 = (Get-FileHash python-${{ matrix.python-version }}-amd64-voxtapack.zip -Algorithm SHA1).Hash
-        echo "SHA1=$sha1" >> $GITHUB_ENV
-        echo "::set-output name=sha1::$sha1"
+      - name: Compute SHA-1 Hash
+        id: sha1
+        run: |
+          $sha1 = (Get-FileHash python-${{ matrix.python-version }}-amd64-voxtapack.zip -Algorithm SHA1).Hash
+          echo "SHA1=$sha1" >> $GITHUB_ENV
+          echo "::set-output name=sha1::$sha1"
 
-    - name: Release
-      uses: softprops/action-gh-release@v1
-      if: startsWith(github.ref, 'refs/tags/')
-      with:
-        body: 'SHA-1 Hash: ${{ steps.sha1.outputs.sha1 }}'
-        draft: true
-        files: python-${{ matrix.python-version }}-amd64-voxtapack.zip
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          body: "SHA-1 Hash: ${{ steps.sha1.outputs.sha1 }}"
+          draft: true
+          files: python-${{ matrix.python-version }}-amd64-voxtapack.zip
