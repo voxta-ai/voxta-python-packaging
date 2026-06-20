@@ -1,0 +1,44 @@
+name: Build and Publish Wheel for diffusers
+
+# diffusers needs huggingface/diffusers PR #13843 (CLIPTextModel + from_single_file
+# fix for transformers >= 5.x), which is not in a PyPI release yet. We pin the merged
+# commit and build a pure-python wheel here for visibility, instead of forcing every
+# end user to have git installed for a git+ dependency. Used by Chatterbox and
+# LocalDiffusers. Drop once diffusers 0.39.x ships on PyPI.
+
+on:
+  push:
+    tags:
+      - 'diffusers-*'
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Check out code
+      uses: actions/checkout@v4
+
+    - name: Clone diffusers repository
+      run: |
+        git clone https://github.com/huggingface/diffusers.git
+        cd diffusers
+        git checkout b95637a98dda87a679321a2dfde5f166f22a8119
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.13'
+
+    - name: Build wheel
+      working-directory: diffusers
+      run: |
+        python -m pip install --upgrade build
+        python -m build --wheel --outdir dist
+
+    - name: Release
+      uses: softprops/action-gh-release@v2
+      if: startsWith(github.ref, 'refs/tags/')
+      with:
+        draft: true
+        files: diffusers/dist/*.whl
