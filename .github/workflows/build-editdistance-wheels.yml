@@ -32,7 +32,7 @@ jobs:
 
     - name: Install cibuildwheel
       working-directory: editdistance
-      run: python -m pip install cibuildwheel==2.21.3
+      run: python -m pip install cibuildwheel==4.2.1
 
     - name: Build
       working-directory: editdistance
