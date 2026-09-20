@@ -1,0 +1,49 @@
+name: Mirror Wheels for llama-cpp-python
+
+# llama-cpp-python ships no CUDA wheel on PyPI; the CUDA builds Voxta uses come from
+# JamePeng's fork releases (MIT). Pulling a large asset straight from a third-party
+# GitHub release at install time is flaky for end users - the download drops and pip
+# lands a truncated file, failing with "Wheel is invalid". This workflow mirrors the
+# upstream prebuilt wheels for visibility, then they get uploaded to the
+# public.voxta.ai/voxta-python-wheels blob like every other wheel here.
+# No compilation - we just re-host the upstream prebuilt wheels.
+
+on:
+  push:
+    tags:
+      - 'llama-cpp-python-*'
+
+jobs:
+  mirror-and-release:
+    runs-on: ubuntu-latest
+
+    env:
+      VERSION: "0.4.0"
+      UPSTREAM_DATE: "20260919"
+
+    steps:
+    - name: Download prebuilt llama-cpp-python wheels
+      shell: bash
+      run: |
+        mkdir -p dist
+        base="https://github.com/JamePeng/llama-cpp-python/releases/download"
+        curl -fSL -o "dist/llama_cpp_python-${VERSION}+cu128-cp314-cp314-win_amd64.whl" \
+          "$base/v${VERSION}-cu128-win-${UPSTREAM_DATE}/llama_cpp_python-${VERSION}+cu128-cp314-cp314-win_amd64.whl"
+        curl -fSL -o "dist/llama_cpp_python-${VERSION}+cu128-cp314-cp314-linux_x86_64.whl" \
+          "$base/v${VERSION}-cu128-linux-${UPSTREAM_DATE}/llama_cpp_python-${VERSION}+cu128-cp314-cp314-linux_x86_64.whl"
+
+    - name: Verify wheels are valid zips
+      shell: bash
+      working-directory: dist
+      run: |
+        for whl in *.whl; do
+          echo "Checking $whl"
+          python -c "import zipfile, sys; sys.exit(0 if zipfile.is_zipfile('$whl') else 1)"
+        done
+
+    - name: Release
+      uses: softprops/action-gh-release@v2
+      if: startsWith(github.ref, 'refs/tags/')
+      with:
+        draft: true
+        files: dist/*.whl

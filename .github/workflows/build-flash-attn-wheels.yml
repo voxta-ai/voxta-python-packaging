@@ -1,8 +1,9 @@
 name: Mirror Wheels for flash-attn
 
-# flash-attn ships no cp313 CUDA wheel on PyPI, and the only prebuilt wheels live on
-# third-party GitHub releases (kingbri1 for Windows, mjun0812 for Linux x64). Pulling a
-# 100+ MB asset straight from those releases at install time is flaky for end users:
+# flash-attn ships no CUDA wheel on PyPI, and the only prebuilt wheels live on third-party
+# GitHub releases. Windows used to come from kingbri1, which stops at cp313; mjun0812
+# publishes the same 2.8.3 / cu128 / torch 2.9 pairing for both platforms, so both now come
+# from there. Pulling a 250 MB asset straight from those releases at install time is flaky:
 # the download drops and pip lands a 0-byte file, failing with "Wheel is invalid".
 # This workflow mirrors the upstream prebuilt wheels for visibility, then they get
 # uploaded to the public.voxta.ai/voxta-python-wheels blob like every other wheel here.
@@ -22,10 +23,11 @@ jobs:
       shell: bash
       run: |
         mkdir -p dist
-        curl -fSL -o "dist/flash_attn-2.8.3+cu128torch2.9.0cxx11abiFALSE-cp313-cp313-win_amd64.whl" \
-          "https://github.com/kingbri1/flash-attention/releases/download/v2.8.3/flash_attn-2.8.3+cu128torch2.9.0cxx11abiFALSE-cp313-cp313-win_amd64.whl"
-        curl -fSL -o "dist/flash_attn-2.8.3+cu128torch2.9-cp313-cp313-linux_x86_64.whl" \
-          "https://github.com/mjun0812/flash-attention-prebuild-wheels/releases/download/v0.9.0/flash_attn-2.8.3+cu128torch2.9-cp313-cp313-linux_x86_64.whl"
+        base="https://github.com/mjun0812/flash-attention-prebuild-wheels/releases/download"
+        curl -fSL -o "dist/flash_attn-2.8.3+cu128torch2.9-cp314-cp314-win_amd64.whl" \
+          "$base/v0.9.28/flash_attn-2.8.3+cu128torch2.9-cp314-cp314-win_amd64.whl"
+        curl -fSL -o "dist/flash_attn-2.8.3+cu128torch2.9-cp314-cp314-linux_x86_64.whl" \
+          "$base/v0.9.0/flash_attn-2.8.3+cu128torch2.9-cp314-cp314-linux_x86_64.whl"
 
     - name: Verify wheels are valid zips
       shell: bash
