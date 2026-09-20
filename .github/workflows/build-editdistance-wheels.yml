@@ -1,8 +1,8 @@
 name: Build and Publish Wheel for editdistance
 
-# editdistance ships no cp313 wheel on PyPI, so pip falls back to compiling the
+# editdistance ships no cp314 wheel on PyPI, so pip falls back to compiling the
 # C/Cython extension from source - which fails on end-user machines without a full
-# MSVC + Windows SDK toolchain. Build prebuilt cp313 wheels here for visibility,
+# MSVC + Windows SDK toolchain. Build prebuilt cp314 wheels here for visibility,
 # then upload them to the public.voxta.ai/voxta-python-wheels blob.
 
 on:
@@ -28,7 +28,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: '3.13'
+        python-version: '3.14'
 
     - name: Install cibuildwheel
       working-directory: editdistance
@@ -38,7 +38,7 @@ jobs:
       working-directory: editdistance
       run: python -m cibuildwheel --output-dir dist
       env:
-        CIBW_BUILD: "cp313-*"
+        CIBW_BUILD: "cp314-*"
         CIBW_ARCHS_WINDOWS: "AMD64"
         CIBW_ARCHS_LINUX: "x86_64"
         CIBW_SKIP: "*-musllinux*"
