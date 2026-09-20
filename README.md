@@ -14,8 +14,11 @@ an upstream prebuilt wheel, so there is no build toolchain to keep working as ve
 
 The mirrors exist because pulling a 250 MB asset from a third-party release at install time is
 flaky: the download drops, pip lands a truncated file, and the user gets "Wheel is invalid".
-Releases here are for visibility; the wheels are then uploaded to the
-`public.voxta.ai/voxta-python-wheels` blob, which is what Voxta actually installs from.
+
+Voxta installs these straight from the releases here, so a mirrored wheel needs one release per
+package and ABI tag, tagged `<package>-<version>-<cptag>` - `PythonWheels` builds the download URL
+from exactly those pieces. The `public.voxta.ai/voxta-python-wheels` blob is the eventual home;
+moving there is a change of base URL in `PythonWheels` and nothing else.
 
 ## Bumping the Python version
 
